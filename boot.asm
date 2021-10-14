@@ -12,7 +12,8 @@ org  07c00h  ; 告诉编译器程序加载到7c00处
 
     mov eax, LOADER_START_SECTOR
     mov bx, LOADER_BASE_ADDR
-    mov cx, 1
+    ; cx: 读取N个扇区，具体得看loader.bin的大小，只要保证能够全部读取到即可
+    mov cx, 4
     call LoadDisk
 
     jmp LOADER_BASE_ADDR
