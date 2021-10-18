@@ -1,24 +1,34 @@
-#include "kernel/print.h"
+#include "init.h"
+#include "thread/thread.h"
+#include "interrupt.h"
+
+void k_thread_function_a(void*);
+void k_thread_function_b(void*);
 
 int main(void) {
-    put_char('k');
-    put_char('e');
-    put_char('r');
-    put_char('n');
-    put_char('e');
-    put_char('l');
-    put_char('\n');
-    put_char('1');
-    put_char('2');
-    put_char('\b');
-    put_char('3');
-    put_char('\n');
     put_str("I am kernel!\n");
+    init();
 
-    put_int(7);
-    put_char('\n');
-    put_int(0x7c00);
-    
-    while (1);
+    thread_start("k_thread_a", 31, k_thread_function_a, "threadA");
+    thread_start("k_thread_b", 8, k_thread_function_b, "threadB");
+
+    intr_enable();
+
+    while (1) {
+        // console_put_str("main ");
+    }
+
     return 0;
+}
+
+void k_thread_function_a(void* args) {
+    while (1) {
+        console_put_str((char*) args);
+    }
+}
+
+void k_thread_function_b(void* args) {
+    while (1) {
+        console_put_str((char*) args);
+    }
 }

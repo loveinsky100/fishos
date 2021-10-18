@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "stdint.h": "c",
+        "__node_handle": "c",
+        "thread.h": "c",
+        "init.h": "c",
+        "interrupt.h": "c",
+        "memory.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
+}
