@@ -1,73 +1,94 @@
-# include "ioqueue.h"
-# include "interrupt.h"
-# include "global.h"
-# include "debug.h"
+#include "ioqueue.h"
+#include "interrupt.h"
+#include "global.h"
+#include "debug.h"
 
-void ioqueue_init(struct ioqueue* queue) {
-    lock_init(&queue->lock);
-    queue->head = queue->tail = 0;
-    queue->producer = queue->tail = NULL;
+/* 初始化io队列ioq */
+void ioqueue_init(struct ioqueue* ioq) {
+    lock_init(&ioq->lock);  // 初始化io队列的锁
+    ioq->producer = ioq->consumer = NULL;   // 生产者和消费者置空
+    ioq->head = ioq->tail = 0;  // 队列的首尾指针指向缓冲区数组第0个位置
 }
 
+/* 返回pos在缓冲区中的下一个位置值 */
 static int32_t next_pos(int32_t pos) {
-    return (pos + 1) % buf_size;
+    return (pos + 1) % bufsize;
 }
 
-int is_queue_full(struct ioqueue* queue) {
-    return next_pos(queue->head) == queue->tail;
+/* 判断队列是否已满 */
+bool ioq_full(struct ioqueue* ioq) {
+    ASSERT(intr_get_status() == INTR_OFF);
+    return next_pos(ioq->head) == ioq->tail;
 }
 
-int is_queue_empty(struct ioqueue* queue) {
-    return queue->head == queue->tail;
+/* 判断队列是否已空 */
+static bool ioq_empty(struct ioqueue* ioq) {
+    ASSERT(intr_get_status() == INTR_OFF);
+    return ioq->head == ioq->tail;
 }
 
-static void queue_wait(struct task_struct** waiter) {
+/* 使当前生产者或消费者在此缓冲区上等待 */
+static void ioq_wait(struct task_struct** waiter) {
+    ASSERT(*waiter == NULL && waiter != NULL);
     *waiter = running_thread();
     thread_block(TASK_BLOCKED);
 }
 
+/* 唤醒waiter */
 static void wakeup(struct task_struct** waiter) {
+    ASSERT(*waiter != NULL);
     thread_unblock(*waiter);
     *waiter = NULL;
 }
 
-/**
- * 从给定的队列中获取一个字符，如果队列为空，那么等待.
- */ 
-char queue_getchar(struct ioqueue* queue) {
+/* 消费者从ioq队列中获取一个字符 */
+char ioq_getchar(struct ioqueue* ioq) {
     ASSERT(intr_get_status() == INTR_OFF);
 
-    while (is_queue_empty(queue)) {
-        lock_acquire(&queue->lock);
-        // 这里同时会把ioqueue的consumer置为当前线程
-        queue_wait(&queue->consumer);
-        lock_release(&queue->lock);
+    /* 若缓冲区(队列)为空,把消费者ioq->consumer记为当前线程自己,
+     * 目的是将来生产者往缓冲区里装商品后,生产者知道唤醒哪个消费者,
+     * 也就是唤醒当前线程自己*/
+    while (ioq_empty(ioq)) {
+        lock_acquire(&ioq->lock);
+        ioq_wait(&ioq->consumer);
+        lock_release(&ioq->lock);
     }
 
-    char byte = queue->buf[queue->tail];
-    queue->tail = next_pos(queue->tail);
+    char byte = ioq->buf[ioq->tail];    // 从缓冲区中取出
+    ioq->tail = next_pos(ioq->tail);
 
-    if (queue->producer != NULL) {
-        // 在无锁的情况下调用解除阻塞操作，因为bochs是单核CPU且屏蔽了中断，所以是安全的
-        wakeup(&queue->producer);
+    if (ioq->producer != NULL) {
+        wakeup(&ioq->producer);
     }
-
     return byte;
 }
 
-char queue_putchar(struct ioqueue* queue, char byte) {
+/* 生产者往ioq队列中写入一个字符byte */
+void ioq_putchar(struct ioqueue* ioq, char byte) {
     ASSERT(intr_get_status() == INTR_OFF);
 
-    while (is_queue_full(queue)) {
-        lock_acquire(&queue->lock);
-        queue_wait(&queue->producer);
-        lock_release(&queue->lock);
+    /* 若缓冲区(队列)已经满了,把生产者ioq->producer记为自己,
+     * 为的是当缓冲区里的东西被消费者取完后让消费者知道唤醒哪个生产者,
+     * 也就是唤醒当前线程自己*/
+    while (ioq_full(ioq)) {
+        lock_acquire(&ioq->lock);
+        ioq_wait(&ioq->producer);
+        lock_release(&ioq->lock);
     }
-
-    queue->buf[queue->head] = byte;
-    queue->head = next_pos(queue->head);
-
-    if (queue->consumer != NULL) {
-        wakeup(&queue->consumer);
+    ioq->buf[ioq->head] = byte;     // 把字节放入缓冲区中
+    ioq->head = next_pos(ioq->head);// 把写游标移到下一位置
+    if (ioq->consumer != NULL) {
+        wakeup(&ioq->consumer);     // 唤醒消费者
     }
+}
+
+/* 返回环形缓冲区中的数据长度 */
+uint32_t ioq_length(struct ioqueue* ioq) {
+    uint32_t len = 0;
+    if (ioq->head >= ioq->tail) {
+        len = ioq->head - ioq->tail;
+    } else {
+        len = bufsize - (ioq->tail - ioq->head);
+    }
+    return len;
 }

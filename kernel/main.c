@@ -1,34 +1,41 @@
+#include "print.h"
 #include "init.h"
-#include "thread/thread.h"
+#include "thread.h"
 #include "interrupt.h"
+#include "console.h"
+#include "process.h"
+#include "syscall-init.h"
+#include "syscall.h"
+#include "stdio.h"
+#include "memory.h"
+#include "dir.h"
+#include "fs.h"
+#include "assert.h"
+#include "shell.h"
 
-void k_thread_function_a(void*);
-void k_thread_function_b(void*);
+void init(void);
 
-int main(void) {
-    put_str("I am kernel!\n");
-    init();
-
-    thread_start("k_thread_a", 31, k_thread_function_a, "threadA");
-    thread_start("k_thread_b", 8, k_thread_function_b, "threadB");
-
-    intr_enable();
-
-    while (1) {
-        // console_put_str("main ");
-    }
-
+void main(void) {
+    put_str("Hello World, Fishos!\n");
+    init_all();
+    // cls_screen();
+    console_put_str("[fish@localhost /]$ ");
+    thread_exit(running_thread(), true);
     return 0;
 }
 
-void k_thread_function_a(void* args) {
-    while (1) {
-        console_put_str((char*) args);
+/* init进程 */
+void init(void) {
+    uint32_t ret_pid = fork();
+    if (ret_pid) {  // 父进程
+        int status;
+        int child_pid;
+        while (1) {
+            child_pid = wait(&status);
+            printf("I`m init, My pid is 1, I recieve a child, It`s pid is %d, status is %d\n", child_pid, status);
+        }
+    } else {    // 子进程
+        my_shell();
     }
-}
-
-void k_thread_function_b(void* args) {
-    while (1) {
-        console_put_str((char*) args);
-    }
+    panic("init: should not be here");
 }
