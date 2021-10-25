@@ -32,6 +32,10 @@ struct dir* dir_open(struct partition* part, uint32_t inode_no) {
 bool search_dir_entry(
     struct partition* part, struct dir* pdir,
     const char* name, struct dir_entry* dir_e) {
+    if (NULL == pdir || pdir->inode == NULL) {
+        return false;
+    }
+
     uint32_t block_cnt = 140;   // 12个直接块+128个一级间接块=140块
 
     /* 12个直接块大小+128个间接块,共560字节 */
@@ -40,7 +44,6 @@ bool search_dir_entry(
         printk("search_dir_entry: sys_malloc for all_blocks failed");
         return false;
     }
-
     uint32_t block_idx = 0;
     while (block_idx < 12) {
         all_blocks[block_idx] = pdir->inode->i_sectors[block_idx];
@@ -322,6 +325,10 @@ bool delete_dir_entry(struct partition* part, struct dir* pdir, uint32_t inode_n
 struct dir_entry* dir_read(struct dir* dir) {
     struct dir_entry* dir_e = (struct dir_entry*)dir->dir_buf;
     struct inode* dir_inode = dir->inode;
+    if (NULL == dir_inode) {
+        return NULL;
+    }
+
     uint32_t all_blocks[140] = {0}, block_cnt = 12;
     uint32_t block_idx = 0, dir_entry_idx = 0;
     while (block_idx < 12) {
@@ -333,12 +340,12 @@ struct dir_entry* dir_read(struct dir* dir) {
         block_cnt = 140;
     }
     block_idx = 0;
-
     uint32_t cur_dir_entry_pos = 0; // 当前目录项的偏移,此项用来判断是否是之前已经返回过的目录项
     uint32_t dir_entry_size = cur_part->sb->dir_entry_size;
     uint32_t dir_entrys_per_sec = SECTOR_SIZE / dir_entry_size; // 1扇区内可容纳的目录项个数
     /* 因为此目录内可能删除了某些文件或子目录,所以要遍历所有块 */
     while (block_idx < block_cnt) {
+        printk("6\n");
         if (dir->dir_pos >= dir_inode->i_size) {
             return NULL;
         }

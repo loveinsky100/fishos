@@ -86,18 +86,18 @@ static void general_intr_handler(uint8_t vec_nr) {
         return;		//IRQ7和IRQ15会产生伪中断(spurious interrupt),无须处理。
     }
     /* 将光标置为0,从屏幕左上角清出一片打印异常信息的区域,方便阅读 */
-    cls_screen();
+    // cls_screen();
 
-    set_cursor(0);
+    // set_cursor(0);
     int cursor_pos = 0;
     while(cursor_pos < 320) {
         put_char(' ');
         cursor_pos++;
     }
 
-    set_cursor(0); // 重置光标为屏幕左上角
+    // set_cursor(0); // 重置光标为屏幕左上角
     put_str("!!!!!!!      excetion message begin  !!!!!!!!\n");
-    set_cursor(88);	// 从第2行第8个字符开始打印
+    // set_cursor(88);	// 从第2行第8个字符开始打印
     put_str(intr_name[vec_nr]);
     if (vec_nr == 14) {	  // 若为Pagefault,将缺失的地址打印出来并悬停
         int page_fault_vaddr = 0;

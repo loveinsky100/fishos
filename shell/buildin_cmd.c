@@ -179,7 +179,12 @@ void buildin_ls(uint32_t argc, char** argv) {
             }
         } else {
             while ((dir_e = readdir(dir))) {
-                printf("%s ", dir_e->filename);
+                printf("29 \n");
+                if (NULL == dir_e) {
+                    printf("Empty! ");
+                } else {
+                    printf("%s ", dir_e->filename);
+                }
             }
             printf("\n");
         }
@@ -219,7 +224,7 @@ int32_t buildin_mkdir(uint32_t argc, char** argv) {
     } else {
         make_clear_abs_path(argv[1], final_path);
         /* 若创建的不是根目录 */
-        if (strcmp("/", final_path)) {
+        if (strcmp("/", final_path) != 0) {
             if (mkdir(final_path) == 0) {
                 ret = 0;
             } else {

@@ -241,7 +241,6 @@ static int search_file(const char* pathname, struct path_search_record* searched
         searched_record->searched_path[0] = 0;
         return 0;
     }
-
     uint32_t path_len = strlen(pathname);
     /* 保证pathname至少是这样的路径/x且小于最大长度 */
     ASSERT(pathname[0] == '/' && path_len > 1 && path_len < MAX_PATH_LEN);
@@ -261,11 +260,9 @@ static int search_file(const char* pathname, struct path_search_record* searched
     while (name[0]) {   // 若第一个字符就是结束符,结束循环
         /* 记录查找过的路径,但不能超过searched_path的长度512字节 */
         ASSERT(strlen(searched_record->searched_path) < MAX_PATH_LEN);
-
         /* 记录已存在的父目录 */
         strcat(searched_record->searched_path, "/");
         strcat(searched_record->searched_path, name);
-
         /* 在所给的目录中查找文件 */
         if (search_dir_entry(cur_part, parent_dir, name, &dir_e)) {
             memset(name, 0, MAX_FILE_NAME_LEN);
@@ -290,7 +287,6 @@ static int search_file(const char* pathname, struct path_search_record* searched
             return -1;
         }
     }
-
     /* 执行到此,必然是遍历了完整路径并且查找的文件或目录只有同名目录存在 */
     dir_close(searched_record->parent_dir);
 
@@ -554,11 +550,10 @@ int32_t sys_mkdir(const char* pathname) {
         	goto rollback;
         }
     }
-
     struct dir* parent_dir = searched_record.parent_dir;
     /* 目录名称后可能会有字符'/',所以最好直接用searched_record.searched_path,无'/' */
     char* dirname = strrchr(searched_record.searched_path, '/') + 1;
-
+    printk("dirname: %s", dirname);
     inode_no = inode_bitmap_alloc(cur_part);
     if (inode_no == -1) {
         printk("sys_mkdir: allocate inode failed\n");
@@ -851,7 +846,12 @@ int32_t sys_stat(const char* path, struct stat* buf) {
     if (!strcmp(path, "/") || !strcmp(path, "/.") || !strcmp(path, "/..")) {
         buf->st_filetype = FT_DIRECTORY;
         buf->st_ino = 0;
+        if (NULL == root_dir.inode) {
+            buf->st_size = 0;
+        } else {
         buf->st_size = root_dir.inode->i_size;
+        }
+        
         return 0;
     }
 

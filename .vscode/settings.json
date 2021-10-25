@@ -5,7 +5,8 @@
         "thread.h": "c",
         "init.h": "c",
         "interrupt.h": "c",
-        "memory.h": "c"
+        "memory.h": "c",
+        "__config": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }
