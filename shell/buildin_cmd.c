@@ -143,7 +143,7 @@ void buildin_ls(uint32_t argc, char** argv) {
         make_clear_abs_path(pathname, final_path);
         pathname = final_path;
     }
-
+        
     if (stat(pathname, &file_stat) == -1) {
         printf("ls: cannot access %s: No such file or directory\n", pathname);
         return;
@@ -179,7 +179,6 @@ void buildin_ls(uint32_t argc, char** argv) {
             }
         } else {
             while ((dir_e = readdir(dir))) {
-                printf("29 \n");
                 if (NULL == dir_e) {
                     printf("Empty! ");
                 } else {

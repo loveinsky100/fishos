@@ -25,4 +25,6 @@ void init_all() {
     intr_enable();  // 后面的ide_init需要打开中断
     ide_init();     // 初始化硬盘
     filesys_init(); // 初始化文件系统
+
+    put_str("init_all done\n");
 }

@@ -5,7 +5,7 @@ CC = x86_64-elf-gcc
 LD = x86_64-elf-ld
 LIB = -I lib/ -I lib/kernel/ -I lib/user/ -I kernel/ -I device/ -I thread/ -I userprog/ -I fs/ -I shell/
 ASFLAGS = -f elf
-CFLAGS = -m32 -Wall $(LIB) -c -fno-builtin -W -Wstrict-prototypes \
+CFLAGS = -m32 -Wall $(LIB) -c -fno-builtin -W -Wstrict-prototypes -g \
                   -Wmissing-prototypes
 LDFLAGS = -melf_i386 -Ttext $(ENTRY_POINT) -e main -Map $(BUILD_DIR)/kernel.map
 OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/init.o $(BUILD_DIR)/interrupt.o \
@@ -206,7 +206,7 @@ hd:
 	dd if=$(BUILD_DIR)/kernel.bin    of=disk.img bs=512 count=200 seek=9 conv=notrunc
 
 clean:
-	rm -rf disk.img disk.img.* $(BUILD_DIR)
+	rm -rf disk.img disk80.img disk.img.* disk80.img.* $(BUILD_DIR)
 
 build: $(BUILD_DIR)/kernel.bin $(BUILD_DIR)/mbr.bin $(BUILD_DIR)/loader.bin
 
